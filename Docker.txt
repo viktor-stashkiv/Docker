@@ -1,0 +1,99 @@
+*********** Пояснення **********
+docker run --rm -v шляш проекта:/app name_image /* комнада php */
+// створити контейнер на основі вибраного образу 
+--rm після виконанння видалити контейнер 
+-v -- з папки проекту відправити всі файли в докер в папку /app
+
+docker run -d -p 80:80 -v шлях проекту:папка для запуску сервера в докері(/var/www/html) php 7.3:apache
+-d не відображати повідомлення від запуску сервера в консолі та запустити у фоновомі режимі
+-р порт під яким ми його хочемо бачити:правильний на віртуалці
+ *********** Команди **********
+
+docker ps // показати контейнери
+
+docker rm id id id // видалити контейнер
+
+docker rmi ae513a47849c 9f290ac43498 // видалити образ
+
+docker stop id // закрити контейнер
+
+docker container prune // видаляє всі контейнери які не виконуються
+
+docker run --rm -v C:\Users\WIN_10_PRO\Desktop\php:/app php:7.2-cli php app/index.php
+
+docker run --rm -p 2080:80 -v C:\Users\WIN_10_PRO\Desktop\php:/usr/share/nginx/html:ro nginx
+
+******** Запуск nginx + php fpm *********
+
+Cтворити папку на хості під назвою nginx в ній файл nginx.config
+
+У файлі nginx.config вставити
+
+server{
+	listen 80;
+	server_name _;
+	root /app;
+
+	location / {
+		include fastcgi_params;
+		fastcgi_pass php-fpm:9000;
+		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+	}
+
+}
+
+1) docker run --rm -d --name fpm -v C:\Users\WIN_10_PRO\Desktop\php:/app php:7.4-fpm // контейнер php 7.4 fpm
+
+2) docker run --rm -d --name nginx -v C:\Users\WIN_10_PRO\Desktop\php\config\vhost.config:/etc/nginx/conf.d/default.conf -v C:\Users\WIN_10_PRO\Desktop\php:/app -p 2080:80 --link fpm nginx // контейнер nginx + зв'язування з php 
+
+**************** Збірка образу ******************
+
+Добавляємо в Dockerfile 
+
+FROM php:7.4-fpm
+
+RUN pecl install xdebug-2.8.1 \
+    && docker-php-ext-enable xdebug
+
+RUN docker-php-ext-install pdo pdo_mysql
+
+docker build -t relokia/php:7.4-fpm .
+
+********** docker-compose.yml **********
+
+Потрібно створити файл docker-compose.yml
+
+version: "3"
+
+services:
+    php-fpm:
+        image: relokia/php:7.4-fpm
+        volumes:
+             - C:\Users\WIN_10_PRO\Desktop\php\:/app
+    nginx:
+        image: nginx:latest
+        links:
+             - php-fpm
+        ports:
+             - 2080:80
+        volumes:
+             - C:\Users\WIN_10_PRO\Desktop\php\:/app
+             - C:\Users\WIN_10_PRO\Desktop\php\config\vhost.config:/etc/nginx/conf.d/default.conf
+    mysql:
+        image: mysql:5.7
+        environment:
+             - MYSQL_DATABASE=test
+             - MYSQL_USER=demo
+             - MYSQL_PASSWORD=demo
+             - MYSQL_RANDOM_ROOT_PASSWORD=1
+
+docker-compose up
+
+
+
+
+
+
+
+ 
+
